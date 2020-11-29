@@ -1,0 +1,1 @@
+Drag Hello.gba on VisualBoyAdvance.exe OR open with Hello.gba and select  VisualBoyAdvance.exe
