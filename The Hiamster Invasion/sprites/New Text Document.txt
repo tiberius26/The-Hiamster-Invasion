@@ -1,0 +1,94 @@
+	memcpy(&tile_mem[4][0], Hiamster3Tiles, Hiamster3TilesLen);
+	memcpy(pal_obj_mem, Hiamster3Pal, Hiamster3PalLen);
+	oam_init(obj_buffer, 128);
+	
+	REG_DISPCNT= DCNT_OBJ | DCNT_OBJ_1D;
+	
+	obj_test();
+
+void obj_test()
+{
+	int x= 50, y= 50;
+	u32 tid= 0, pb= 0;		// tile id, pal-bank
+	int PX= 130, PY= 99;
+	u32 tidP= 64, pbP= 1;		// tile id, pal-bank
+
+	OBJ_ATTR *Hiamster3= &obj_buffer[0];
+	obj_set_attr(Hiamster3, 
+		ATTR0_SQUARE,				// Square, regular sprite
+		ATTR1_SIZE_64,					// 64x64p, 
+		ATTR2_PALBANK(pb) | tid);		// palbank 0, tile 0
+
+
+	// position sprite (redundant here; the _real_ position
+	// is set further down
+	obj_set_pos(Hiamster3, x, y);
+	
+	OBJ_ATTR *HiamsterP= &obj_buffer[1];
+	obj_set_attr(HiamsterP, 
+		ATTR0_SQUARE,				// Square, regular sprite
+		ATTR1_SIZE_64,					// 64x64p, 
+		ATTR2_PALBANK(pbP) | tidP);		// palbank 0, tile 0
+		
+		obj_set_pos(HiamsterP, PX, PY);
+	while(1)
+	{
+		vid_vsync();
+		key_poll();
+		
+		//Princess run
+		int differenceX = PX-x;
+		if (differenceX>0){
+		PX++;
+		}
+		if(differenceX<0){
+		PX --;
+		}
+
+		int differenceY = PY-y;
+		if (differenceY>0){
+		PY --;
+		}
+		if(differenceY<0){
+		PY++;
+		}
+		
+		/*if(PX<x)
+		{
+			PX--;
+		}*/
+
+		// move left/right
+		x += 2*key_tri_horz();
+
+		// move up/down
+		y += 2*key_tri_vert();
+
+		// increment/decrement starting tile with R/L
+		tid += bit_tribool(key_hit(-1), KI_R, KI_L);
+
+		// flip
+		if(key_hit(KEY_A))	// horizontally
+			Hiamster3->attr1 ^= ATTR1_HFLIP;
+		if(key_hit(KEY_B))	// vertically
+			Hiamster3->attr1 ^= ATTR1_VFLIP;
+		
+		// make it glow (via palette swapping)
+		pb= key_is_down(KEY_SELECT) ? 1 : 0;
+
+		// toggle mapping mode
+		if(key_hit(KEY_START))
+			REG_DISPCNT ^= DCNT_OBJ_1D;
+
+		// Hey look, it's one of them build macros!
+		Hiamster3->attr2= ATTR2_BUILD(tid, pb, 0);
+		obj_set_pos(Hiamster3, x, y);
+
+		
+		// Hey look, it's one of them build macros!
+		HiamsterP->attr2= ATTR2_BUILD(tidP, pbP, 0);
+		obj_set_pos(HiamsterP, PX, PY);
+
+		oam_copy(oam_mem, obj_buffer, 2);	// only need to update one
+	}
+}
